@@ -41,7 +41,7 @@ void DSRTController::onDisconnectComponent()
 }
 
 
-DSRTController::DSRTController(NJointControllerDescriptionProviderInterfacePtr prov, const NJointControllerConfigPtr &config, const VirtualRobot::RobotPtr &)
+DSRTController::DSRTController(NJointControllerDescriptionProviderInterfacePtr prov, const NJointControllerConfigPtr& config, const VirtualRobot::RobotPtr&)
 {
     DSControllerConfigPtr cfg = DSControllerConfigPtr::dynamicCast(config);
 
@@ -94,7 +94,7 @@ DSRTController::DSRTController(NJointControllerDescriptionProviderInterfacePtr p
     oldPosition = tcp->getPositionInRootFrame();
 
     std::vector<float> desiredPositionVec = cfg->desiredPosition;
-    for(size_t i = 0; i < 3; ++i)
+    for (size_t i = 0; i < 3; ++i)
     {
         desiredPosition(i) = desiredPositionVec[i];
     }
@@ -110,11 +110,6 @@ DSRTController::DSRTController(NJointControllerDescriptionProviderInterfacePtr p
         initData.tcpDesiredAngularVelocity(i) = 0;
     }
     reinitTripleBuffer(initData);
-
-
-    rtRobot = robotUnit->getRtRobot();
-    rtRobotJointSet = rtRobot->getRobotNodeSet(cfg->nodeSetName);
-    rtRobotBodySet = rtRobot->getRobotNodeSet("RobotCol");
 
     // initial filter
     currentTCPLinearVelocity_filtered.setZero();
@@ -136,7 +131,7 @@ void DSRTController::controllerRun()
 
     Eigen::Matrix4f currentTCPPose = controllerSensorData.getReadBuffer().tcpPose;
     Eigen::Vector3f currentTCPPosition;
-    currentTCPPosition << currentTCPPose(0,3), currentTCPPose(1,3), currentTCPPose(2,3);
+    currentTCPPosition << currentTCPPose(0, 3), currentTCPPose(1, 3), currentTCPPose(2, 3);
 
     Eigen::Vector3f tcpDesiredLinearVelocity = kp * (desiredPosition - currentTCPPosition);
     float lenVec = tcpDesiredLinearVelocity.norm();
@@ -147,7 +142,7 @@ void DSRTController::controllerRun()
 
     // ToDo: angular velocity
     Eigen::Vector3f tcpDesiredAngularVelocity;
-    tcpDesiredAngularVelocity << 0,0,0;
+    tcpDesiredAngularVelocity << 0, 0, 0;
 
     // ToDo: GMM velocity calculation
 
@@ -160,10 +155,10 @@ void DSRTController::controllerRun()
 }
 
 
-void DSRTController::rtRun(const IceUtil::Time &sensorValuesTimestamp, const IceUtil::Time &timeSinceLastIteration)
+void DSRTController::rtRun(const IceUtil::Time& sensorValuesTimestamp, const IceUtil::Time& timeSinceLastIteration)
 {
     double deltaT = timeSinceLastIteration.toSecondsDouble();
-    if(deltaT != 0)
+    if (deltaT != 0)
     {
 
         Eigen::Matrix4f currentTCPPose = tcp->getPoseInRootFrame();
@@ -174,7 +169,7 @@ void DSRTController::rtRun(const IceUtil::Time &sensorValuesTimestamp, const Ice
 
         Eigen::Vector3f currentTCPRPY = VirtualRobot::MathTools::eigen4f2rpy(currentTCPPose);
         Eigen::Vector3f currentTCPPosition;
-        currentTCPPosition << currentTCPPose(0,3), currentTCPPose(1,3), currentTCPPose(2,3);
+        currentTCPPosition << currentTCPPose(0, 3), currentTCPPose(1, 3), currentTCPPose(2, 3);
 
         Eigen::Vector3f currentTCPLinearVelocity_raw = (currentTCPPosition - oldPosition) / deltaT;
 
@@ -209,30 +204,23 @@ void DSRTController::rtRun(const IceUtil::Time &sensorValuesTimestamp, const Ice
         Eigen::VectorXf jointDesiredTorques = jacobip.transpose() * tcpDesiredForce + jacobio.transpose() * tcpDesiredTorque;
         ARMARX_INFO << "desired Torque: " << jointDesiredTorques;
 
-        VirtualRobot::Gravity gravity(rtRobot, rtRobotJointSet, rtRobotBodySet);
-        std::vector<float> gravityValues(rtRobotJointSet->getSize());
-        gravity.computeGravityTorque(gravityValues);
 
-        for(size_t i = 0; i < targets.size(); ++i)
+
+        for (size_t i = 0; i < targets.size(); ++i)
         {
             float desiredTorque = jointDesiredTorques(i);
-            if(abs(desiredTorque) > torqueLimit)
+            if (abs(desiredTorque) > torqueLimit)
             {
                 desiredTorque = sign(desiredTorque) * torqueLimit;
             }
 
-            float gravityTorque =  gravityValues[i];
-
-            ARMARX_INFO << "gravityTorque: " << gravityTorque;
-            targets.at(i)->torque =  1000;
-
+            targets.at(i)->torque =  0;
         }
-//        targets.at(4)->torque = 1000;
 
     }
     else
     {
-        for(size_t i = 0; i < targets.size(); ++i)
+        for (size_t i = 0; i < targets.size(); ++i)
         {
             targets.at(i)->torque = 0;
 
@@ -243,7 +231,7 @@ void DSRTController::rtRun(const IceUtil::Time &sensorValuesTimestamp, const Ice
 
 }
 
-void DSRTController::onPublish(const SensorAndControl &, const DebugDrawerInterfacePrx &, const DebugObserverInterfacePrx &debugObs)
+void DSRTController::onPublish(const SensorAndControl&, const DebugDrawerInterfacePrx&, const DebugObserverInterfacePrx& debugObs)
 {
 
 }

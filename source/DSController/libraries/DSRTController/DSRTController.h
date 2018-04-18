@@ -73,15 +73,15 @@ namespace armarx
         DSRTController(NJointControllerDescriptionProviderInterfacePtr prov, const NJointControllerConfigPtr& config, const VirtualRobot::RobotPtr&);
 
 
-        std::string getClassName(const Ice::Current &) const
+        std::string getClassName(const Ice::Current&) const
         {
             return "DSRTController";
         }
 
         // NJointController interface
-        void rtRun(const IceUtil::Time &sensorValuesTimestamp, const IceUtil::Time &timeSinceLastIteration);
+        void rtRun(const IceUtil::Time& sensorValuesTimestamp, const IceUtil::Time& timeSinceLastIteration);
 
-     private:
+    private:
         PeriodicTask<DSRTController>::pointer_type controllerTask;
 
         struct DSRTControllerSensorData
@@ -104,9 +104,6 @@ namespace armarx
 
 
         VirtualRobot::RobotNodePtr tcp;
-        VirtualRobot::RobotNodeSetPtr rtRobotJointSet, rtRobotBodySet;
-
-        VirtualRobot::RobotPtr rtRobot;
 
         VirtualRobot::DifferentialIKPtr ik;
         Eigen::MatrixXf jacobip;
@@ -125,7 +122,7 @@ namespace armarx
 
         // NJointController interface
     protected:
-        void onPublish(const SensorAndControl &, const DebugDrawerInterfacePrx &, const DebugObserverInterfacePrx &);
+        void onPublish(const SensorAndControl&, const DebugDrawerInterfacePrx&, const DebugObserverInterfacePrx&);
 
         // NJointController interface
     protected:

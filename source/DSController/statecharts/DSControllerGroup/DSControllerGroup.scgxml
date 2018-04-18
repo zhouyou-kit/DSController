@@ -11,6 +11,13 @@ ArmarX.DSControllerGroupRemoteStateOfferer.RobotUnitName = RobotUnitSimulation
 
 #ArmarX.DSControllerGroupRemoteStateOfferer.RobotStateComponentName = RobotStateComponent
 </Configuration>
+		<Configuration profileName="Root">
+# Required Property
+ArmarX.DSControllerGroupRemoteStateOfferer.RobotUnitName = Armar6Unit
+
+
+#ArmarX.DSControllerGroupRemoteStateOfferer.RobotStateComponentName = RobotStateComponent
+</Configuration>
 	</Configurations>
 	<State filename="DSControllerTest.xml" visibility="public"/>
 </StatechartGroup>
