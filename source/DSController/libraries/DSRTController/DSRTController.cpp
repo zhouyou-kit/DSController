@@ -181,7 +181,6 @@ void DSRTController::rtRun(const IceUtil::Time& sensorValuesTimestamp, const Ice
         double filterFactor = deltaT / (filterTimeConstant + deltaT);
         currentTCPLinearVelocity_filtered = (1 - filterFactor) * currentTCPLinearVelocity_filtered + filterFactor * currentTCPLinearVelocity_raw;
 
-        ARMARX_INFO << "real velocity: " << currentTCPLinearVelocity_filtered;
 
 
         //TODO: orientation velocity
@@ -193,18 +192,12 @@ void DSRTController::rtRun(const IceUtil::Time& sensorValuesTimestamp, const Ice
 
         Eigen::Vector3f tcpDesiredForce = -Damping * (currentTCPLinearVelocity_filtered - tcpDesiredLinearVelocity);
 
-
-        ARMARX_INFO << "desired velocity: " << tcpDesiredLinearVelocity;
-        ARMARX_INFO << "desired force: " << tcpDesiredForce;
-
-
         Eigen::Vector3f tcpDesiredTorque;
         tcpDesiredTorque.setZero();
 
         jacobip = ik->getJacobianMatrix(tcp, VirtualRobot::IKSolver::CartesianSelection::Position);
         jacobio = ik->getJacobianMatrix(tcp, VirtualRobot::IKSolver::CartesianSelection::Orientation);
         Eigen::VectorXf jointDesiredTorques = jacobip.transpose() * tcpDesiredForce + jacobio.transpose() * tcpDesiredTorque;
-        ARMARX_INFO << "desired Torque: " << jointDesiredTorques;
 
 
 
