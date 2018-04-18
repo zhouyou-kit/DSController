@@ -39,7 +39,7 @@ namespace armarx
     {
     public:
         Eigen::Vector3f tcpDesiredLinearVelocity;
-        Eigen::Vector3f tcpDesiredAngularVelocity;
+        Eigen::Vector3f tcpDesiredAngularError;
     };
 
     /**
@@ -95,6 +95,9 @@ namespace armarx
         struct DSRTDebugInfo
         {
             StringFloatDictionary desired_torques;
+            float desiredForce_x;
+            float desiredForce_y;
+            float desiredForce_z;
         };
         TripleBuffer<DSRTDebugInfo> debugDataInfo;
 
@@ -110,18 +113,26 @@ namespace armarx
         Eigen::MatrixXf jacobio;
 
         Eigen::Vector3f desiredPosition;
+
+        Eigen::Quaternionf desiredQuaternion;
         Eigen::Vector3f oldPosition;
 
+        Eigen::Matrix3f oldOrientation;
+
         Eigen::Vector3f currentTCPLinearVelocity_filtered;
+        Eigen::Vector3f currentTCPAngularVelocity_filtered;
+
         float filterTimeConstant;
 
         std::vector<std::string> jointNames;
 
-        float kp;
+        float posiKp;
         float v_max;
-        float Damping;
+        float posiDamping;
         float torqueLimit;
 
+        float oriKp;
+        float oriDamping;
         // NJointController interface
     protected:
         void onPublish(const SensorAndControl&, const DebugDrawerInterfacePrx&, const DebugObserverInterfacePrx&);

@@ -94,12 +94,21 @@ DSRTController::DSRTController(NJointControllerDescriptionProviderInterfacePtr p
 
 
     oldPosition = tcp->getPositionInRootFrame();
+    oldOrientation = tcp->getPoseInRootFrame().block<3, 3>(0, 0);
 
     std::vector<float> desiredPositionVec = cfg->desiredPosition;
     for (size_t i = 0; i < 3; ++i)
     {
         desiredPosition(i) = desiredPositionVec[i];
     }
+
+    std::vector<float> desiredQuaternionVec = cfg->desiredQuaternion;
+    desiredQuaternion.x() = desiredQuaternionVec[0];
+    desiredQuaternion.y() = desiredQuaternionVec[1];
+    desiredQuaternion.z() = desiredQuaternionVec[2];
+    desiredQuaternion.w() = desiredQuaternionVec[3];
+
+
 
     DSRTControllerControlData initData;
     for (size_t i = 0; i < 3; ++i)
@@ -109,16 +118,16 @@ DSRTController::DSRTController(NJointControllerDescriptionProviderInterfacePtr p
 
     for (size_t i = 0; i < 3; ++i)
     {
-        initData.tcpDesiredAngularVelocity(i) = 0;
+        initData.tcpDesiredAngularError(i) = 0;
     }
     reinitTripleBuffer(initData);
 
     // initial filter
     currentTCPLinearVelocity_filtered.setZero();
     filterTimeConstant = cfg->filterTimeConstant;
-    kp = cfg->kp;
+    posiKp = cfg->posiKp;
     v_max = cfg->v_max;
-    Damping = cfg->D;
+    posiDamping = cfg->posiDamping;
     torqueLimit = cfg->torqueLimit;
     ARMARX_INFO << "Initialization done";
 }
@@ -135,7 +144,7 @@ void DSRTController::controllerRun()
     Eigen::Vector3f currentTCPPosition;
     currentTCPPosition << currentTCPPose(0, 3), currentTCPPose(1, 3), currentTCPPose(2, 3);
 
-    Eigen::Vector3f tcpDesiredLinearVelocity = kp * (desiredPosition - currentTCPPosition);
+    Eigen::Vector3f tcpDesiredLinearVelocity = posiKp * (desiredPosition - currentTCPPosition);
     float lenVec = tcpDesiredLinearVelocity.norm();
     if (lenVec > v_max)
     {
@@ -143,15 +152,21 @@ void DSRTController::controllerRun()
     }
 
     // ToDo: angular velocity
-    Eigen::Vector3f tcpDesiredAngularVelocity;
-    tcpDesiredAngularVelocity << 0, 0, 0;
+    Eigen::Vector3f tcpDesiredAngularError;
+    tcpDesiredAngularError << 0, 0, 0;
+
+    Eigen::Matrix3f currentOrientation = currentTCPPose.block<3, 3>(0, 0);
+    Eigen::Matrix3f desiredOrientation = desiredQuaternion.normalized().toRotationMatrix();
+    Eigen::Matrix3f orientationError = currentOrientation * desiredOrientation.inverse();
+    Eigen::Quaternionf diffQuaternion(orientationError);
+    Eigen::AngleAxisf angleAxis(diffQuaternion);
+    tcpDesiredAngularError = angleAxis.angle() * angleAxis.axis();
+
 
     // ToDo: GMM velocity calculation
 
-
-
     getWriterControlStruct().tcpDesiredLinearVelocity = tcpDesiredLinearVelocity;
-    getWriterControlStruct().tcpDesiredAngularVelocity = tcpDesiredAngularVelocity;
+    getWriterControlStruct().tcpDesiredAngularError = tcpDesiredAngularError;
 
     writeControlStruct();
 }
@@ -164,40 +179,40 @@ void DSRTController::rtRun(const IceUtil::Time& sensorValuesTimestamp, const Ice
     {
 
         Eigen::Matrix4f currentTCPPose = tcp->getPoseInRootFrame();
-
         controllerSensorData.getWriteBuffer().tcpPose = currentTCPPose;
         controllerSensorData.getWriteBuffer().currentTime += deltaT;
         controllerSensorData.commitWrite();
 
-        Eigen::Vector3f currentTCPRPY = VirtualRobot::MathTools::eigen4f2rpy(currentTCPPose);
+        // calculate linear velocity
         Eigen::Vector3f currentTCPPosition;
         currentTCPPosition << currentTCPPose(0, 3), currentTCPPose(1, 3), currentTCPPose(2, 3);
-
         Eigen::Vector3f currentTCPLinearVelocity_raw = (currentTCPPosition - oldPosition) / deltaT;
-
-        oldPosition = currentTCPPosition;
-
-
         double filterFactor = deltaT / (filterTimeConstant + deltaT);
         currentTCPLinearVelocity_filtered = (1 - filterFactor) * currentTCPLinearVelocity_filtered + filterFactor * currentTCPLinearVelocity_raw;
+        oldPosition = currentTCPPosition;
 
+        // calculate angular velocity
+        Eigen::Matrix3f currentTCPOrientation = currentTCPPose.block<3, 3>(0, 0);
+        Eigen::Matrix3f currentTCPDiff = currentTCPOrientation * oldOrientation.inverse();
+        Eigen::AngleAxisf currentAngleAxisDiff(currentTCPDiff);
+        Eigen::Vector3f currentTCPAngularVelocity_raw = currentAngleAxisDiff.angle() * currentAngleAxisDiff.axis();
+        currentTCPAngularVelocity_filtered = (1 - filterFactor) * currentTCPAngularVelocity_filtered + filterFactor * currentTCPAngularVelocity_raw;
+        oldOrientation = currentTCPOrientation;
 
-
-        //TODO: orientation velocity
-        Eigen::Vector3f tcpAngularVelocity;
-        tcpAngularVelocity.setZero();
 
         Eigen::Vector3f tcpDesiredLinearVelocity = rtGetControlStruct().tcpDesiredLinearVelocity;
-        Eigen::Vector3f tcpDesiredAngularVelocity = rtGetControlStruct().tcpDesiredAngularVelocity;
+        Eigen::Vector3f tcpDesiredAngularError = rtGetControlStruct().tcpDesiredAngularError;
 
-        Eigen::Vector3f tcpDesiredForce = -Damping * (currentTCPLinearVelocity_filtered - tcpDesiredLinearVelocity);
+        // calculate desired tcp force
+        Eigen::Vector3f tcpDesiredForce = -posiDamping * (currentTCPLinearVelocity_filtered - tcpDesiredLinearVelocity);
 
-        Eigen::Vector3f tcpDesiredTorque;
-        tcpDesiredTorque.setZero();
+        // calculate desired tcp torque
+        Eigen::Vector3f tcpDesiredTorque = - oriKp * tcpDesiredAngularError - oriDamping * currentTCPAngularVelocity_filtered;
 
+        // calculate desired joint torque
         jacobip = ik->getJacobianMatrix(tcp, VirtualRobot::IKSolver::CartesianSelection::Position);
         jacobio = ik->getJacobianMatrix(tcp, VirtualRobot::IKSolver::CartesianSelection::Orientation);
-        Eigen::VectorXf jointDesiredTorques = jacobip.transpose() * tcpDesiredForce + jacobio.transpose() * tcpDesiredTorque;
+        Eigen::VectorXf jointDesiredTorques = 0.001 * jacobip.transpose() * tcpDesiredForce + jacobio.transpose() * tcpDesiredTorque;
 
 
 
@@ -211,8 +226,12 @@ void DSRTController::rtRun(const IceUtil::Time& sensorValuesTimestamp, const Ice
 
             debugDataInfo.getWriteBuffer().desired_torques[jointNames[i]] = desiredTorque;
 
-            targets.at(i)->torque = 0;
+            targets.at(i)->torque = desiredTorque;
         }
+
+        debugDataInfo.getWriteBuffer().desiredForce_x = tcpDesiredForce(0);
+        debugDataInfo.getWriteBuffer().desiredForce_y = tcpDesiredForce(1);
+        debugDataInfo.getWriteBuffer().desiredForce_z = tcpDesiredForce(2);
 
         debugDataInfo.commitWrite();
 
@@ -240,7 +259,9 @@ void DSRTController::onPublish(const SensorAndControl&, const DebugDrawerInterfa
         datafields[pair.first] = new Variant(pair.second);
     }
 
-
+    datafields["desiredForce_x"] = new Variant(debugDataInfo.getUpToDateReadBuffer().desiredForce_x);
+    datafields["desiredForce_y"] = new Variant(debugDataInfo.getUpToDateReadBuffer().desiredForce_y);
+    datafields["desiredForce_z"] = new Variant(debugDataInfo.getUpToDateReadBuffer().desiredForce_z);
 
     debugObs->setDebugChannel("DSControllerOutput", datafields);
 

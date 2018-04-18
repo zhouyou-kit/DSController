@@ -28,9 +28,12 @@ module armarx
 {
     class DSControllerConfig extends NJointControllerConfig
     {
-        float kp = 5;
+        float posiKp = 5;
         float v_max = 0.15;
-        float D = 10;
+        float posiDamping = 10;
+
+        float oriDamping;
+        float oriKp;
 
         float filterTimeConstant = 0.01;
         float torqueLimit = 1;
@@ -40,7 +43,7 @@ module armarx
         string tcpName = "";
 
         Ice::FloatSeq desiredPosition;
-
+        Ice::FloatSeq desiredQuaternion;
 
     };
 

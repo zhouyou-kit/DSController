@@ -16,6 +16,12 @@
 		<Parameter name="NodeSetName" type="::armarx::StringVariantData" docType="string" optional="no">
 			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::StringVariantData","value":"RightArm"}}' docValue="RightArm"/>
 		</Parameter>
+		<Parameter name="OriDamping" type="::armarx::FloatVariantData" docType="float" optional="no">
+			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.1}}' docValue="0.100000001490116"/>
+		</Parameter>
+		<Parameter name="OriKp" type="::armarx::FloatVariantData" docType="float" optional="no">
+			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.15}}' docValue="0.150000005960464"/>
+		</Parameter>
 		<Parameter name="TorqueLimit" type="::armarx::FloatVariantData" docType="float" optional="no">
 			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":20}}' docValue="20"/>
 		</Parameter>

@@ -52,11 +52,14 @@ void DSControllerTest::run()
     std::string tcpName = getRobot()->getRobotNodeSet(nodeSetName)->getTCP()->getName();
 
     std::vector<float> desiredTarget = in.getDesiredTarget();
+    std::vector<float> desiredQuaternion;
 
     float filterTimeConstant = in.getFilterTimeConstant();
     float torqueLimit = in.getTorqueLimit();
 
-    DSControllerConfigPtr config = new DSControllerConfig(kp, v_max, D, filterTimeConstant, torqueLimit, nodeSetName, tcpName, desiredTarget);
+    float oriKp = in.getOriKp();
+    float oriDamping = in.getOriDamping();
+    DSControllerConfigPtr config = new DSControllerConfig(kp, v_max, D, oriDamping, oriKp, filterTimeConstant, torqueLimit, nodeSetName, tcpName, desiredTarget, desiredQuaternion);
 
 
     DSControllerInterfacePrx dsController
