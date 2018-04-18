@@ -1,0 +1,15 @@
+/**
+  \mainpage
+
+  DSController provides
+
+  \li \subpage DSController-Overview "DSController Overview"
+  \li \subpage DSController-Tutorials "DSController Tutorials"
+  \li \subpage DSController-HowTos "DSController Howtos"
+  \li \subpage DSController-FAQ "DSController FAQ"
+  \li \subpage DSController-Components "DSController Components"
+  \li \subpage DSController-GuiPlugins "DSController Gui Plugins"
+  \li \subpage DSController-About "DSController About"
+  \li \subpage DSController-License "DSController License"
+
+*/

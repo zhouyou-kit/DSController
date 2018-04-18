@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<StatechartGroup name="DSControllerGroup" package="DSController" generateContext="true">
+	<Proxies>
+		<Proxy value="RobotAPIInterfaces.robotUnit"/>
+		<Proxy value="RobotAPIInterfaces.robotStateComponent"/>
+	</Proxies>
+	<Configurations>
+		<Configuration profileName="Armar6Simulation">
+# Required Property
+ArmarX.DSControllerGroupRemoteStateOfferer.RobotUnitName = RobotUnitSimulation
+
+#ArmarX.DSControllerGroupRemoteStateOfferer.RobotStateComponentName = RobotStateComponent
+</Configuration>
+	</Configurations>
+	<State filename="DSControllerTest.xml" visibility="public"/>
+</StatechartGroup>
+
