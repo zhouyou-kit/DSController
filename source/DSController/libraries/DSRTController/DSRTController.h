@@ -94,7 +94,7 @@ namespace armarx
 
         struct DSRTDebugInfo
         {
-            Eigen::VectorXf desired_torques;
+            StringFloatDictionary desired_torques;
         };
         TripleBuffer<DSRTDebugInfo> debugDataInfo;
 
@@ -114,6 +114,8 @@ namespace armarx
 
         Eigen::Vector3f currentTCPLinearVelocity_filtered;
         float filterTimeConstant;
+
+        std::vector<std::string> jointNames;
 
         float kp;
         float v_max;

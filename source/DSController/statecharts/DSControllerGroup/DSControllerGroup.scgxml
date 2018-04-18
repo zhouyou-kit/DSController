@@ -5,16 +5,15 @@
 		<Proxy value="RobotAPIInterfaces.robotStateComponent"/>
 	</Proxies>
 	<Configurations>
-		<Configuration profileName="Armar6Simulation">
-# Required Property
-ArmarX.DSControllerGroupRemoteStateOfferer.RobotUnitName = RobotUnitSimulation
-
-#ArmarX.DSControllerGroupRemoteStateOfferer.RobotStateComponentName = RobotStateComponent
-</Configuration>
-		<Configuration profileName="Root">
+		<Configuration profileName="Armar6Real">
 # Required Property
 ArmarX.DSControllerGroupRemoteStateOfferer.RobotUnitName = Armar6Unit
 
+#ArmarX.DSControllerGroupRemoteStateOfferer.RobotStateComponentName = RobotStateComponent
+</Configuration>
+		<Configuration profileName="Armar6Simulation">
+# Required Property
+ArmarX.DSControllerGroupRemoteStateOfferer.RobotUnitName = RobotUnitSimulation
 
 #ArmarX.DSControllerGroupRemoteStateOfferer.RobotStateComponentName = RobotStateComponent
 </Configuration>

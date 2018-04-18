@@ -52,10 +52,12 @@ DSRTController::DSRTController(NJointControllerDescriptionProviderInterfacePtr p
     ARMARX_CHECK_EXPRESSION(!cfg->nodeSetName.empty());
     VirtualRobot::RobotNodeSetPtr rns = robotUnit->getRtRobot()->getRobotNodeSet(cfg->nodeSetName);
 
+    jointNames.clear();
     ARMARX_CHECK_EXPRESSION_W_HINT(rns, cfg->nodeSetName);
     for (size_t i = 0; i < rns->getSize(); ++i)
     {
         std::string jointName = rns->getNode(i)->getName();
+        jointNames.push_back(jointName);
         ControlTargetBase* ct = prov->getControlTarget(jointName, ControlModes::Torque1DoF);
         ARMARX_CHECK_EXPRESSION(ct);
         const SensorValueBase* sv = prov->getSensorValue(jointName);
@@ -214,8 +216,12 @@ void DSRTController::rtRun(const IceUtil::Time& sensorValuesTimestamp, const Ice
                 desiredTorque = sign(desiredTorque) * torqueLimit;
             }
 
-            targets.at(i)->torque =  0;
+            debugDataInfo.getWriteBuffer().desired_torques[jointNames[i]] = desiredTorque;
+
+            targets.at(i)->torque = 0;
         }
+
+        debugDataInfo.commitWrite();
 
     }
     else
@@ -233,6 +239,17 @@ void DSRTController::rtRun(const IceUtil::Time& sensorValuesTimestamp, const Ice
 
 void DSRTController::onPublish(const SensorAndControl&, const DebugDrawerInterfacePrx&, const DebugObserverInterfacePrx& debugObs)
 {
+
+    StringVariantBaseMap datafields;
+    auto values = debugDataInfo.getUpToDateReadBuffer().desired_torques;
+    for (auto& pair : values)
+    {
+        datafields[pair.first] = new Variant(pair.second);
+    }
+
+
+
+    debugObs->setDebugChannel("DSControllerOutput", datafields);
 
 }
 
