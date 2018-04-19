@@ -108,10 +108,12 @@ DSRTController::DSRTController(NJointControllerDescriptionProviderInterfacePtr p
     ARMARX_INFO << "ik reseted ";
 
     std::vector<float> desiredQuaternionVec = cfg->desiredQuaternion;
-    desiredQuaternion.x() = desiredQuaternionVec[0];
-    desiredQuaternion.y() = desiredQuaternionVec[1];
-    desiredQuaternion.z() = desiredQuaternionVec[2];
-    desiredQuaternion.w() = desiredQuaternionVec[3];
+    ARMARX_CHECK_EQUAL(desiredQuaternionVec.size(), 4);
+
+    desiredQuaternion.x() = desiredQuaternionVec.at(0);
+    desiredQuaternion.y() = desiredQuaternionVec.at(1);
+    desiredQuaternion.z() = desiredQuaternionVec.at(2);
+    desiredQuaternion.w() = desiredQuaternionVec.at(3);
 
 
 
@@ -270,8 +272,21 @@ void DSRTController::rtRun(const IceUtil::Time& sensorValuesTimestamp, const Ice
 
         // calculate desired joint torque
         Eigen::MatrixXf I = Eigen::MatrixXf::Identity(jointDim, jointDim);
-        Eigen::MatrixXf jtpinv = ik->computePseudoInverseJacobianMatrix(jacobi.transpose());
-        Eigen::VectorXf nullspaceTorque = - nullspaceKp * (qpos - qnullspace) - nullspaceDamping * qvel;
+
+        float lambda = 2;
+        Eigen::MatrixXf jtpinv = ik->computePseudoInverseJacobianMatrix(jacobi.transpose(), lambda);
+
+        Eigen::VectorXf nullqerror = qpos - qnullspace;
+
+        for (int i = 0; i < nullqerror.rows(); ++i)
+        {
+            if (fabs(nullqerror(i)) < 0.09)
+            {
+                nullqerror(i) = 0;
+            }
+        }
+        Eigen::VectorXf nullspaceTorque = - nullspaceKp * nullqerror - nullspaceDamping * qvel;
+
         Eigen::VectorXf jointDesiredTorques = jacobi.transpose() * tcpDesiredWrench + (I - jacobi.transpose() * jtpinv) * nullspaceTorque;
 
         for (size_t i = 0; i < targets.size(); ++i)
