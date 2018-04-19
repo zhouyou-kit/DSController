@@ -2,34 +2,43 @@
 <State version="1.2" name="DSControllerTest" uuid="683519C5-2B12-4299-8CF0-11739F5D7311" width="800" height="600" type="Normal State">
 	<InputParameters>
 		<Parameter name="Damping" type="::armarx::FloatVariantData" docType="float" optional="no">
-			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.15}}' docValue="0.150000005960464"/>
+			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":100}}' docValue="100"/>
+		</Parameter>
+		<Parameter name="DesiredQuaternion" type="::armarx::SingleTypeVariantListBase(::armarx::FloatVariantData)" docType="List(float)" optional="no">
+			<DefaultValue value='{"array":[{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":-0.3010846674442291}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.6089535951614380}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.5090597271919250}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.5285661220550537}}],"type":"::armarx::SingleTypeVariantListBase"}' docValue="-0.301084667444229\n0.608953595161438\n0.509059727191925\n0.528566122055054"/>
 		</Parameter>
 		<Parameter name="DesiredTarget" type="::armarx::SingleTypeVariantListBase(::armarx::FloatVariantData)" docType="List(float)" optional="no">
-			<DefaultValue value='{"array":[{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":385.5236816406250}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":704.048339843750}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":1301.294555664062}}],"type":"::armarx::SingleTypeVariantListBase"}' docValue="385.523681640625\n704.04833984375\n1301.29455566406"/>
+			<DefaultValue value='{"array":[{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":-319.3533935546875}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":806.7463378906250}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":1025.316284179688}}],"type":"::armarx::SingleTypeVariantListBase"}' docValue="-319.353393554688\n806.746337890625\n1025.31628417969"/>
 		</Parameter>
 		<Parameter name="FilterTimeConstant" type="::armarx::FloatVariantData" docType="float" optional="no">
 			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.01}}' docValue="0.00999999977648258"/>
 		</Parameter>
 		<Parameter name="Kp" type="::armarx::FloatVariantData" docType="float" optional="no">
-			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":5.0}}' docValue="5"/>
+			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.3}}' docValue="0.300000011920929"/>
 		</Parameter>
 		<Parameter name="NodeSetName" type="::armarx::StringVariantData" docType="string" optional="no">
-			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::StringVariantData","value":"RightArm"}}' docValue="RightArm"/>
+			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::StringVariantData","value":"LeftArm"}}' docValue="LeftArm"/>
+		</Parameter>
+		<Parameter name="NullSpaceDamping" type="::armarx::FloatVariantData" docType="float" optional="no">
+			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.15}}' docValue="0.150000005960464"/>
 		</Parameter>
 		<Parameter name="NullSpaceJoint" type="::armarx::SingleTypeVariantListBase(::armarx::FloatVariantData)" docType="List(float)" optional="no">
-			<DefaultValue value='{"array":[{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.0}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.0}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.0}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.0}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.0}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.0}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.0}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.0}}],"type":"::armarx::SingleTypeVariantListBase"}' docValue="0\n0\n0\n0\n0\n0\n0\n0"/>
+			<DefaultValue value='{"array":[{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.16}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.12}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.54}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.38}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":1.53}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":-0.30}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.10}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.06}}],"type":"::armarx::SingleTypeVariantListBase"}' docValue="0.159999996423721\n0.119999997317791\n0.540000021457672\n0.379999995231628\n1.52999997138977\n-0.300000011920929\n0.100000001490116\n0.0599999986588955"/>
+		</Parameter>
+		<Parameter name="NullSpaceKp" type="::armarx::FloatVariantData" docType="float" optional="no">
+			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.2}}' docValue="0.200000002980232"/>
 		</Parameter>
 		<Parameter name="OriDamping" type="::armarx::FloatVariantData" docType="float" optional="no">
 			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.1}}' docValue="0.100000001490116"/>
 		</Parameter>
 		<Parameter name="OriKp" type="::armarx::FloatVariantData" docType="float" optional="no">
-			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.15}}' docValue="0.150000005960464"/>
+			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.5}}' docValue="0.5"/>
 		</Parameter>
 		<Parameter name="TorqueLimit" type="::armarx::FloatVariantData" docType="float" optional="no">
 			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":20}}' docValue="20"/>
 		</Parameter>
 		<Parameter name="Vmax" type="::armarx::FloatVariantData" docType="float" optional="no">
-			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":150}}' docValue="150"/>
+			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.15}}' docValue="0.150000005960464"/>
 		</Parameter>
 	</InputParameters>
 	<OutputParameters/>

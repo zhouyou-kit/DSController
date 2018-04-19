@@ -152,6 +152,9 @@ namespace armarx
         float oriKp;
         float oriDamping;
 
+        float nullspaceKp;
+        float nullspaceDamping;
+
         Eigen::VectorXf qnullspace;
 
         // NJointController interface

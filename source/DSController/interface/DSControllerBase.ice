@@ -47,6 +47,9 @@ module armarx
 
         Ice::FloatSeq qnullspaceVec;
 
+        float nullspaceKp;
+        float nullspaceDamping;
+
     };
 
     interface DSControllerInterface extends NJointControllerInterface
