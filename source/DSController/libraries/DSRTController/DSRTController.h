@@ -32,6 +32,10 @@
 #include <VirtualRobot/Tools/Gravity.h>
 
 #include <DSController/interface/DSControllerBase.h>
+#include "GMRDynamics.h"
+#include <jsoncpp/json/reader.h>
+
+#include "MathLib.h"
 
 namespace armarx
 {
@@ -156,6 +160,22 @@ namespace armarx
         float nullspaceDamping;
 
         Eigen::VectorXf qnullspace;
+
+        boost::shared_ptr<GMRDynamics> GMMPtr;
+
+
+        struct GMRParameters
+        {
+            int K_gmm_;
+            int dim_;
+            std::vector<double> Priors_;
+            std::vector<double> Mu_;
+            std::vector<double> Sigma_;
+            std::vector<double> attractor_;
+            double dt_;
+        } GMRParas;
+
+        Json::Reader jsonReader;
 
         // NJointController interface
     protected:

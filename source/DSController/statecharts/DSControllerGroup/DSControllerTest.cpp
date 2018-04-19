@@ -52,7 +52,7 @@ void DSControllerTest::run()
     std::string tcpName = getRobot()->getRobotNodeSet(nodeSetName)->getTCP()->getName();
 
     std::vector<float> desiredTarget = in.getDesiredTarget();
-    std::vector<float> desiredQuaternion;
+    std::vector<float> desiredQuaternion = in.getDesiredQuaternion();
 
     float filterTimeConstant = in.getFilterTimeConstant();
     float torqueLimit = in.getTorqueLimit();
@@ -63,6 +63,7 @@ void DSControllerTest::run()
 
     float nullspaceKp = in.getNullSpaceKp();
     float nullspaceDamping = in.getNullSpaceDamping();
+    std::string gmmfilestring = in.getGMMParamsFile();
     DSControllerConfigPtr config = new DSControllerConfig(kp,
             v_max,
             D,
@@ -76,7 +77,9 @@ void DSControllerTest::run()
             desiredQuaternion,
             nullspaceVec,
             nullspaceKp,
-            nullspaceDamping);
+            nullspaceDamping,
+            gmmfilestring
+                                                         );
 
 
     DSControllerInterfacePrx dsController

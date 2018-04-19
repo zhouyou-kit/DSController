@@ -50,6 +50,8 @@ module armarx
         float nullspaceKp;
         float nullspaceDamping;
 
+
+        string gmmParamsFile;
     };
 
     interface DSControllerInterface extends NJointControllerInterface

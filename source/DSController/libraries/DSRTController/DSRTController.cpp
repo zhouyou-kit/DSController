@@ -22,7 +22,6 @@
 
 #include "DSRTController.h"
 
-
 using namespace armarx;
 
 NJointControllerRegistration<DSRTController> registrationControllerDSRTController("DSRTController");
@@ -154,6 +153,56 @@ DSRTController::DSRTController(NJointControllerDescriptionProviderInterfacePtr p
     nullspaceKp = cfg->nullspaceKp;
     nullspaceDamping = cfg->nullspaceDamping;
 
+
+
+
+
+    //set GMM parameters ...
+    std::string gmmParamsFile = cfg->gmmParamsFile;
+    Json::Value root;
+    jsonReader.parse(gmmParamsFile, root);
+
+    Json::Value data = root.get("K", 0);
+    GMRParas.K_gmm_ = data[0].asInt();
+
+    data = root.get("dim", 0);
+    GMRParas.dim_ = data[0].asInt();
+
+    data = root.get("Priors", 0);
+    GMRParas.Priors_.resize(GMRParas.K_gmm_);
+    Json::Value dat1 = data[0];
+    for (int i = 0; i < GMRParas.Priors_.size(); ++i)
+    {
+        GMRParas.Priors_.at(i) = dat1[i].asDouble();
+    }
+
+    data = root.get("Mu", 0);
+    GMRParas.Mu_.resize(GMRParas.K_gmm_ * GMRParas.dim_);
+    dat1 = data[0];
+    for (int i = 0; i < GMRParas.Mu_.size(); ++i)
+    {
+        GMRParas.Mu_.at(i) = dat1[i].asDouble();
+    }
+
+    data = root.get("Sigma", 0);
+    GMRParas.Sigma_.resize(GMRParas.K_gmm_ * GMRParas.dim_ * GMRParas.dim_);
+    dat1 = data[0];
+    for (int i = 0; i < GMRParas.Sigma_.size(); ++i)
+    {
+        GMRParas.Sigma_.at(i) = dat1[i].asDouble();
+    }
+
+    data = root.get("attractor", 0);
+    GMRParas.attractor_.resize(GMRParas.dim_);
+    dat1 = data[0];
+    for (int i = 0; i < GMRParas.attractor_.size(); ++i)
+    {
+        GMRParas.attractor_.at(i) = dat1[i].asDouble();
+    }
+
+
+    GMMPtr.reset(new GMRDynamics(GMRParas.K_gmm_, GMRParas.dim_, GMRParas.dt_, GMRParas.Priors_, GMRParas.Mu_, GMRParas.Sigma_));
+    GMMPtr->initGMR(0, 2, 3, 5);
     ARMARX_INFO << "Initialization done";
 }
 
@@ -165,25 +214,39 @@ void DSRTController::controllerRun()
         return;
     }
 
+
     Eigen::Matrix4f currentTCPPose = controllerSensorData.getReadBuffer().tcpPose;
     Eigen::Vector3f currentTCPPosition;
     currentTCPPosition << currentTCPPose(0, 3), currentTCPPose(1, 3), currentTCPPose(2, 3);
 
     Eigen::Vector3f PositionError = desiredPosition - currentTCPPosition;
-
     if (PositionError.norm() < 100)
     {
         PositionError.setZero();
     }
 
-    Eigen::Vector3f tcpDesiredLinearVelocity = posiKp * PositionError;
+    MathLib::Vector position_error;
+    position_error.Resize(3);
+
+    for (int i = 0; i < 3; ++i)
+    {
+        position_error(i) = PositionError(i);
+    }
+
+    MathLib::Vector desired_vel;
+    desired_vel.Resize(3);
+    desired_vel = GMMPtr->getVelocity(position_error);
+
+    Eigen::Vector3f tcpDesiredLinearVelocity;
+    tcpDesiredLinearVelocity << desired_vel(0), desired_vel(1), desired_vel(2);
+
+    //    Eigen::Vector3f tcpDesiredLinearVelocity = posiKp * PositionError;
     float lenVec = tcpDesiredLinearVelocity.norm();
     if (lenVec > v_max)
     {
         tcpDesiredLinearVelocity = (v_max / lenVec) * tcpDesiredLinearVelocity;
     }
 
-    // ToDo: angular velocity
     Eigen::Vector3f tcpDesiredAngularError;
     tcpDesiredAngularError << 0, 0, 0;
 
