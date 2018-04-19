@@ -98,11 +98,29 @@ namespace armarx
             float desiredForce_x;
             float desiredForce_y;
             float desiredForce_z;
+            float tcpDesiredTorque_x;
+            float tcpDesiredTorque_y;
+            float tcpDesiredTorque_z;
+
+            float tcpDesiredAngularError_x;
+            float tcpDesiredAngularError_y;
+            float tcpDesiredAngularError_z;
+
+            float currentTCPAngularVelocity_x;
+            float currentTCPAngularVelocity_y;
+            float currentTCPAngularVelocity_z;
+
+            float currentTCPLinearVelocity_x;
+            float currentTCPLinearVelocity_y;
+            float currentTCPLinearVelocity_z;
         };
         TripleBuffer<DSRTDebugInfo> debugDataInfo;
 
         std::vector<const SensorValue1DoFActuatorTorque*> torqueSensors;
         std::vector<const SensorValue1DoFGravityTorque*> gravityTorqueSensors;
+        std::vector<const SensorValue1DoFActuatorVelocity*> velocitySensors;
+        std::vector<const SensorValue1DoFActuatorPosition*> positionSensors;
+
         std::vector<ControlTarget1DoFActuatorTorque*> targets;
 
 
