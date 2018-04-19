@@ -151,6 +151,9 @@ namespace armarx
 
         float oriKp;
         float oriDamping;
+
+        Eigen::VectorXf qnullspace;
+
         // NJointController interface
     protected:
         void onPublish(const SensorAndControl&, const DebugDrawerInterfacePrx&, const DebugObserverInterfacePrx&);

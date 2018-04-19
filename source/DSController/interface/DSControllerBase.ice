@@ -45,6 +45,8 @@ module armarx
         Ice::FloatSeq desiredPosition;
         Ice::FloatSeq desiredQuaternion;
 
+        Ice::FloatSeq qnullspaceVec;
+
     };
 
     interface DSControllerInterface extends NJointControllerInterface

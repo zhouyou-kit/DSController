@@ -59,7 +59,8 @@ void DSControllerTest::run()
 
     float oriKp = in.getOriKp();
     float oriDamping = in.getOriDamping();
-    DSControllerConfigPtr config = new DSControllerConfig(kp, v_max, D, oriDamping, oriKp, filterTimeConstant, torqueLimit, nodeSetName, tcpName, desiredTarget, desiredQuaternion);
+    std::vector<float> nullspaceVec = in.getNullSpaceJoint();
+    DSControllerConfigPtr config = new DSControllerConfig(kp, v_max, D, oriDamping, oriKp, filterTimeConstant, torqueLimit, nodeSetName, tcpName, desiredTarget, desiredQuaternion, nullspaceVec);
 
 
     DSControllerInterfacePrx dsController

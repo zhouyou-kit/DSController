@@ -134,6 +134,18 @@ DSRTController::DSRTController(NJointControllerDescriptionProviderInterfacePtr p
     v_max = cfg->v_max;
     posiDamping = cfg->posiDamping;
     torqueLimit = cfg->torqueLimit;
+    oriKp = cfg->oriKp;
+    oriDamping  = cfg->oriDamping;
+
+
+    std::vector<float> qnullspaceVec = cfg->qnullspaceVec;
+    qnullspace.resize(qnullspaceVec.size());
+
+    for (size_t i = 0; i < qnullspaceVec.size(); ++i)
+    {
+        qnullspace(i) = qnullspaceVec[i];
+    }
+
     ARMARX_INFO << "Initialization done";
 }
 
@@ -149,7 +161,14 @@ void DSRTController::controllerRun()
     Eigen::Vector3f currentTCPPosition;
     currentTCPPosition << currentTCPPose(0, 3), currentTCPPose(1, 3), currentTCPPose(2, 3);
 
-    Eigen::Vector3f tcpDesiredLinearVelocity = posiKp * (desiredPosition - currentTCPPosition);
+    Eigen::Vector3f PositionError = desiredPosition - currentTCPPosition;
+
+    if (PositionError.norm() < 100)
+    {
+        PositionError.setZero();
+    }
+
+    Eigen::Vector3f tcpDesiredLinearVelocity = posiKp * PositionError;
     float lenVec = tcpDesiredLinearVelocity.norm();
     if (lenVec > v_max)
     {
@@ -189,10 +208,13 @@ void DSRTController::rtRun(const IceUtil::Time& sensorValuesTimestamp, const Ice
         controllerSensorData.commitWrite();
 
         Eigen::MatrixXf jacobi = ik->getJacobianMatrix(tcp, VirtualRobot::IKSolver::CartesianSelection::All);
+
         Eigen::VectorXf qpos;
         Eigen::VectorXf qvel;
         qpos.resize(positionSensors.size());
         qvel.resize(velocitySensors.size());
+
+        int jointDim = positionSensors.size();
 
         for (size_t i = 0; i < velocitySensors.size(); ++i)
         {
@@ -200,11 +222,15 @@ void DSRTController::rtRun(const IceUtil::Time& sensorValuesTimestamp, const Ice
             qvel(i) = velocitySensors[i]->velocity;
         }
 
+        // calculate nullspace torque
+
 
         Eigen::VectorXf tcptwist = jacobi * qvel;
 
         Eigen::Vector3f currentTCPLinearVelocity;
         currentTCPLinearVelocity << 0.001 * tcptwist(0),  0.001 * tcptwist(1), 0.001 * tcptwist(2);
+        double filterFactor = deltaT / (filterTimeConstant + deltaT);
+        currentTCPLinearVelocity_filtered = (1 - filterFactor) * currentTCPLinearVelocity_filtered + filterFactor * currentTCPLinearVelocity;
 
 
         Eigen::Vector3f currentTCPAngularVelocity;
@@ -213,8 +239,6 @@ void DSRTController::rtRun(const IceUtil::Time& sensorValuesTimestamp, const Ice
         //        Eigen::Vector3f currentTCPPosition;
         //        currentTCPPosition << currentTCPPose(0, 3), currentTCPPose(1, 3), currentTCPPose(2, 3);
         //        Eigen::Vector3f currentTCPLinearVelocity_raw = (currentTCPPosition - oldPosition) / deltaT;
-        //        double filterFactor = deltaT / (filterTimeConstant + deltaT);
-        //        currentTCPLinearVelocity_filtered = (1 - filterFactor) * currentTCPLinearVelocity_filtered + filterFactor * currentTCPLinearVelocity_raw;
         //        oldPosition = currentTCPPosition;
 
         //        // calculate angular velocity
@@ -222,26 +246,29 @@ void DSRTController::rtRun(const IceUtil::Time& sensorValuesTimestamp, const Ice
         //        Eigen::Matrix3f currentTCPDiff = currentTCPOrientation * oldOrientation.inverse();
         //        Eigen::AngleAxisf currentAngleAxisDiff(currentTCPDiff);
         //        Eigen::Vector3f currentTCPAngularVelocity_raw = currentAngleAxisDiff.angle() * currentAngleAxisDiff.axis();
-        //        currentTCPAngularVelocity_filtered = (1 - filterFactor) * currentTCPAngularVelocity_filtered + filterFactor * currentTCPAngularVelocity_raw;
         //        oldOrientation = currentTCPOrientation;
+        //        currentTCPAngularVelocity_filtered = (1 - filterFactor) * currentTCPAngularVelocity_filtered + filterFactor * currentTCPAngularVelocity_raw;
 
 
         Eigen::Vector3f tcpDesiredLinearVelocity = rtGetControlStruct().tcpDesiredLinearVelocity;
         Eigen::Vector3f tcpDesiredAngularError = rtGetControlStruct().tcpDesiredAngularError;
 
         // calculate desired tcp force
-        Eigen::Vector3f tcpDesiredForce = -posiDamping * (currentTCPLinearVelocity - tcpDesiredLinearVelocity);
+        Eigen::Vector3f tcpDesiredForce = -posiDamping * (currentTCPLinearVelocity_filtered - tcpDesiredLinearVelocity);
 
         // calculate desired tcp torque
-        Eigen::Vector3f tcpDesiredTorque = - 0.3 * tcpDesiredAngularError - 0.1 * currentTCPAngularVelocity;
+        Eigen::Vector3f tcpDesiredTorque = - oriKp * tcpDesiredAngularError - oriDamping * currentTCPAngularVelocity;
 
         Eigen::Vector6f tcpDesiredWrench;
         tcpDesiredWrench << 0.001 * tcpDesiredForce, tcpDesiredTorque;
-        // calculate desired joint torque
 
+        // calculate desired joint torque
         //        Eigen::VectorXf jointDesiredTorques = 0.001 * jacobip.transpose() * tcpDesiredForce + jacobio.transpose() * tcpDesiredTorque;
 
-        Eigen::VectorXf jointDesiredTorques = jacobi.transpose() * tcpDesiredWrench;
+        Eigen::MatrixXf I = Eigen::MatrixXf::Identity(jointDim, jointDim);
+        Eigen::MatrixXf jtpinv = ik->computePseudoInverseJacobianMatrix(jacobi.transpose());
+        Eigen::VectorXf nullspaceTorque = 2.0 * (qnullspace - qpos) - 0.01 * qvel;
+        Eigen::VectorXf jointDesiredTorques = jacobi.transpose() * tcpDesiredWrench + (I - jacobi.transpose() * jtpinv) * nullspaceTorque;
 
         for (size_t i = 0; i < targets.size(); ++i)
         {
@@ -273,9 +300,9 @@ void DSRTController::rtRun(const IceUtil::Time& sensorValuesTimestamp, const Ice
         debugDataInfo.getWriteBuffer().currentTCPAngularVelocity_y = currentTCPAngularVelocity(1);
         debugDataInfo.getWriteBuffer().currentTCPAngularVelocity_z = currentTCPAngularVelocity(2);
 
-        debugDataInfo.getWriteBuffer().currentTCPLinearVelocity_x = currentTCPLinearVelocity(0);
-        debugDataInfo.getWriteBuffer().currentTCPLinearVelocity_y = currentTCPLinearVelocity(1);
-        debugDataInfo.getWriteBuffer().currentTCPLinearVelocity_z = currentTCPLinearVelocity(2);
+        debugDataInfo.getWriteBuffer().currentTCPLinearVelocity_x = currentTCPLinearVelocity_filtered(0);
+        debugDataInfo.getWriteBuffer().currentTCPLinearVelocity_y = currentTCPLinearVelocity_filtered(1);
+        debugDataInfo.getWriteBuffer().currentTCPLinearVelocity_z = currentTCPLinearVelocity_filtered(2);
 
         debugDataInfo.commitWrite();
 
