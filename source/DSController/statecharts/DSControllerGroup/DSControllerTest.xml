@@ -10,6 +10,9 @@
 		<Parameter name="DesiredTarget" type="::armarx::SingleTypeVariantListBase(::armarx::FloatVariantData)" docType="List(float)" optional="no">
 			<DefaultValue value='{"array":[{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":-319.35}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":806.74}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":1025.31}}],"type":"::armarx::SingleTypeVariantListBase"}' docValue="-319.350006103516\n806.739990234375\n1025.31005859375"/>
 		</Parameter>
+		<Parameter name="DsAdaptorEpsilon" type="::armarx::FloatVariantData" docType="float" optional="no">
+			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":2}}' docValue="2"/>
+		</Parameter>
 		<Parameter name="FilterTimeConstant" type="::armarx::FloatVariantData" docType="float" optional="no">
 			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.04}}' docValue="0.0399999991059303"/>
 		</Parameter>

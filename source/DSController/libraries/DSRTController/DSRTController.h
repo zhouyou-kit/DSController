@@ -59,6 +59,7 @@ namespace armarx
         double dt_;
     };
 
+
     class GMMMotionGen
     {
     public:
@@ -75,7 +76,7 @@ namespace armarx
         float scaling;
 
         float belief;
-
+        float v_max;
 
         void getGMMParamsFromJsonFile(const std::string& fileName)
         {
@@ -94,6 +95,8 @@ namespace armarx
 
             scaling = json->getDouble("Scaling");
             belief = json->getDouble("InitBelief");
+            belief = 0;
+            v_max = json->getDouble("MaxVelocity");
 
             gmm.reset(new GMRDynamics(gmmParas.K_gmm_, gmmParas.dim_, gmmParas.dt_, gmmParas.Priors_, gmmParas.Mu_, gmmParas.Sigma_));
             gmm->initGMR(0, 2, 3, 5);
@@ -133,6 +136,18 @@ namespace armarx
             tcpDesiredLinearVelocity << desired_vel(0), desired_vel(1), desired_vel(2);
 
             currentDesiredVelocity = scaling * tcpDesiredLinearVelocity;
+
+
+            float lenVec = tcpDesiredLinearVelocity.norm();
+            if (std::isnan(lenVec))
+            {
+                tcpDesiredLinearVelocity.setZero();
+            }
+
+            if (lenVec > v_max)
+            {
+                tcpDesiredLinearVelocity = (v_max / lenVec) * tcpDesiredLinearVelocity;
+            }
         }
 
 
@@ -142,18 +157,178 @@ namespace armarx
 
     typedef boost::shared_ptr<GMMMotionGen> GMMMotionGenPtr;
 
+    class DSAdaptor
+    {
+    public:
+        float task0_belief;
+        float epsilon;
+        DSAdaptor() {}
+
+        DSAdaptor(std::vector<GMMMotionGenPtr> gmmMotionGenList, float epsilon)
+        {
+            task0_belief = 1;
+            this->gmmMotionGenList = gmmMotionGenList;
+            this->epsilon = epsilon;
+        }
+
+        Eigen::Vector3f totalDesiredVelocity;
+        std::vector<GMMMotionGenPtr> gmmMotionGenList;
+
+
+        void updateDesiredVelocity(const Eigen::Vector3f& currentPositionInMeter, float positionErrorToleranceInMeter)
+        {
+            totalDesiredVelocity.setZero();
+            for (size_t i = 0; i < gmmMotionGenList.size(); ++i)
+            {
+                gmmMotionGenList[i]->updateDesiredVelocity(currentPositionInMeter, positionErrorToleranceInMeter);
+                totalDesiredVelocity +=  gmmMotionGenList[i]->belief * gmmMotionGenList[i]->currentDesiredVelocity;
+            }
+        }
+
+        void updateBelief(const Eigen::Vector3f& realVelocity)
+        {
+            std::vector<float> beliefUpdate;
+            beliefUpdate.resize(gmmMotionGenList.size());
+
+            float nullInnerSimilarity = 0;
+            for (size_t i = 0; i < gmmMotionGenList.size(); ++i)
+            {
+
+                GMMMotionGenPtr currentGMM = gmmMotionGenList[i];
+
+                float belief = currentGMM->belief;
+                Eigen::Vector3f OtherTasks = totalDesiredVelocity - belief * currentGMM->currentDesiredVelocity;
+                float innerSimilarity = 2 * OtherTasks.dot(currentGMM->currentDesiredVelocity);
+                float outerDisSimilarity = (realVelocity - currentGMM->currentDesiredVelocity).squaredNorm();
+
+                if (innerSimilarity > nullInnerSimilarity)
+                {
+                    nullInnerSimilarity = innerSimilarity;
+                }
+
+                beliefUpdate[i] = - outerDisSimilarity - innerSimilarity;
+            }
+
+            float nullOuterSimilarity = realVelocity.squaredNorm();
+            float zeroTaskRawBeliefUpdate = - nullInnerSimilarity - nullOuterSimilarity;
+
+            if (zeroTaskRawBeliefUpdate < 0.2)
+            {
+                zeroTaskRawBeliefUpdate -= 1000;
+            }
+
+
+            beliefUpdate.insert(beliefUpdate.begin(), zeroTaskRawBeliefUpdate);
+
+            WinnerTakeAll(beliefUpdate);
+
+            task0_belief += epsilon * beliefUpdate[0];
+            float beliefSum = task0_belief;
+
+            for (size_t i = 0; i < gmmMotionGenList.size(); ++i)
+            {
+                gmmMotionGenList[i]->belief += epsilon * beliefUpdate[i + 1];
+                beliefSum += gmmMotionGenList[i]->belief;
+            }
+
+            for (size_t i = 0; i < gmmMotionGenList.size(); ++i)
+            {
+                gmmMotionGenList[i]->belief /= beliefSum;
+            }
+
+            task0_belief /= beliefSum;
+        }
+
+    private:
+
+        void WinnerTakeAll(std::vector<float>& UpdateBeliefs_)
+        {
+            //            std::fill(UpdateBeliefs_.begin(), UpdateBeliefs_.end(), 0);
+
+            int winner_index = 0;
+
+            for (size_t i = 1; i < UpdateBeliefs_.size(); i++)
+            {
+                if (UpdateBeliefs_[i] > UpdateBeliefs_[winner_index])
+                {
+                    winner_index = i;
+                }
+            }
+
+            float winner_belief = task0_belief;
+
+            if (winner_index != 0)
+            {
+                winner_belief = gmmMotionGenList[winner_index - 1]->belief;
+            }
+
+            if (winner_belief == 1)
+            {
+                return;
+            }
+
+            int runnerUp_index = 0;
+
+            if (winner_index == 0)
+            {
+                runnerUp_index = 1;
+            }
+
+            for (size_t i = 0; i < UpdateBeliefs_.size(); i++)
+            {
+                if (i ==  winner_index)
+                {
+                    continue;
+                }
+
+                if (UpdateBeliefs_[i] > UpdateBeliefs_[runnerUp_index])
+                {
+                    runnerUp_index = i;
+                }
+            }
+
+            float offset = 0.5 * (UpdateBeliefs_[winner_index] + UpdateBeliefs_[runnerUp_index]);
+
+            for (size_t i = 0; i < UpdateBeliefs_.size(); i++)
+            {
+                UpdateBeliefs_[i] -= offset;
+            }
+
+            float UpdateSum = 0;
+
+            for (size_t i = 0; i < UpdateBeliefs_.size(); i++)
+            {
+                float belief = task0_belief;
+                if (i != 0)
+                {
+                    belief = gmmMotionGenList[i - 1]->belief;
+                }
+
+                if (belief != 0 || UpdateBeliefs_[i] > 0)
+                {
+                    UpdateSum += UpdateBeliefs_[i];
+                }
+            }
+
+            UpdateBeliefs_[winner_index] -= UpdateSum;
+        }
+    };
+
+    typedef boost::shared_ptr<DSAdaptor> DSAdaptorPtr;
+
+
 
     /**
-    * @defgroup Library-DSRTController DSRTController
-    * @ingroup DSController
-    * A description of the library DSRTController.
-    *
-    * @class DSRTController
-    * @ingroup Library-DSRTController
-    * @brief Brief description of class DSRTController.
-    *
-    * Detailed description of class DSRTController.
-    */
+        * @defgroup Library-DSRTController DSRTController
+        * @ingroup DSController
+        * A description of the library DSRTController.
+        *
+        * @class DSRTController
+        * @ingroup Library-DSRTController
+        * @brief Brief description of class DSRTController.
+        *
+        * Detailed description of class DSRTController.
+        */
 
     class DSRTController : public NJointControllerWithTripleBuffer<DSRTControllerControlData>, public DSControllerInterface
     {
@@ -191,6 +366,8 @@ namespace armarx
             Eigen::Matrix4f tcpPose;
             double currentTime;
 
+            Eigen::Vector3f linearVelocity;
+
         };
         TripleBuffer<DSRTControllerSensorData> controllerSensorData;
 
@@ -215,6 +392,10 @@ namespace armarx
             float currentTCPLinearVelocity_x;
             float currentTCPLinearVelocity_y;
             float currentTCPLinearVelocity_z;
+
+            float belief0;
+            float belief1;
+            float belief2;
         };
         TripleBuffer<DSRTDebugInfo> debugDataInfo;
 
@@ -260,6 +441,8 @@ namespace armarx
         Eigen::VectorXf qnullspace;
 
         std::vector<GMMMotionGenPtr> gmmMotionGenList;
+
+        DSAdaptorPtr dsAdaptorPtr;
 
         float positionErrorTolerance;
 

@@ -167,9 +167,13 @@ DSRTController::DSRTController(NJointControllerDescriptionProviderInterfacePtr p
         gmmMotionGenList.push_back(GMMMotionGenPtr(new GMMMotionGen(gmmParamsFiles.at(i))));
         sumBelief += gmmMotionGenList[i]->belief;
     }
+    ARMARX_CHECK_EQUAL(gmmMotionGenList.size(), 2);
 
 
+
+    dsAdaptorPtr.reset(new DSAdaptor(gmmMotionGenList, cfg->dsAdaptorEpsilon));
     positionErrorTolerance = cfg->positionErrorTolerance;
+
 
     ARMARX_INFO << "Initialization done";
 }
@@ -187,29 +191,23 @@ void DSRTController::controllerRun()
     Eigen::Vector3f currentTCPPositionInMeter;
     currentTCPPositionInMeter << currentTCPPose(0, 3), currentTCPPose(1, 3), currentTCPPose(2, 3);
     currentTCPPositionInMeter = 0.001 * currentTCPPositionInMeter;
+    Eigen::Vector3f realVelocity = controllerSensorData.getReadBuffer().linearVelocity;
 
-    Eigen::Vector3f tcpDesiredLinearVelocity;
-    tcpDesiredLinearVelocity.setZero();
+    dsAdaptorPtr->updateDesiredVelocity(currentTCPPositionInMeter, positionErrorTolerance);
+    Eigen::Vector3f tcpDesiredLinearVelocity = dsAdaptorPtr->totalDesiredVelocity;
+    dsAdaptorPtr->updateBelief(realVelocity);
 
-    for (size_t i = 0; i < gmmMotionGenList.size(); ++i)
+
+    float vecLen = tcpDesiredLinearVelocity.norm();
+    if (vecLen > v_max)
     {
-        gmmMotionGenList[i]->updateDesiredVelocity(currentTCPPositionInMeter, positionErrorTolerance);
-        tcpDesiredLinearVelocity +=  gmmMotionGenList[i]->belief * gmmMotionGenList[i]->currentDesiredVelocity;
+        tcpDesiredLinearVelocity = v_max * tcpDesiredLinearVelocity / vecLen;
     }
 
-    float lenVec = tcpDesiredLinearVelocity.norm();
-    if (std::isnan(lenVec))
-    {
-        ARMARX_WARNING << "nan value from desired velocity ...  ";
-        tcpDesiredLinearVelocity.setZero();
-    }
-
-    if (lenVec > v_max)
-    {
-        tcpDesiredLinearVelocity = (v_max / lenVec) * tcpDesiredLinearVelocity;
-    }
-
-
+    debugDataInfo.getWriteBuffer().belief0 = dsAdaptorPtr->task0_belief;
+    debugDataInfo.getWriteBuffer().belief1 = gmmMotionGenList[0]->belief;
+    debugDataInfo.getWriteBuffer().belief2 = gmmMotionGenList[1]->belief;
+    debugDataInfo.commitWrite();
 
     Eigen::Vector3f tcpDesiredAngularError;
     tcpDesiredAngularError << 0, 0, 0;
@@ -220,9 +218,6 @@ void DSRTController::controllerRun()
     Eigen::Quaternionf diffQuaternion(orientationError);
     Eigen::AngleAxisf angleAxis(diffQuaternion);
     tcpDesiredAngularError = angleAxis.angle() * angleAxis.axis();
-
-
-    // ToDo: GMM velocity calculation
 
     getWriterControlStruct().tcpDesiredLinearVelocity = tcpDesiredLinearVelocity;
     getWriterControlStruct().tcpDesiredAngularError = tcpDesiredAngularError;
@@ -238,9 +233,7 @@ void DSRTController::rtRun(const IceUtil::Time& sensorValuesTimestamp, const Ice
     {
 
         Eigen::Matrix4f currentTCPPose = tcp->getPoseInRootFrame();
-        controllerSensorData.getWriteBuffer().tcpPose = currentTCPPose;
-        controllerSensorData.getWriteBuffer().currentTime += deltaT;
-        controllerSensorData.commitWrite();
+
 
         Eigen::MatrixXf jacobi = ik->getJacobianMatrix(tcp, VirtualRobot::IKSolver::CartesianSelection::All);
 
@@ -257,15 +250,17 @@ void DSRTController::rtRun(const IceUtil::Time& sensorValuesTimestamp, const Ice
             qvel(i) = velocitySensors[i]->velocity;
         }
 
-        // calculate nullspace torque
-
-
         Eigen::VectorXf tcptwist = jacobi * qvel;
 
         Eigen::Vector3f currentTCPLinearVelocity;
         currentTCPLinearVelocity << 0.001 * tcptwist(0),  0.001 * tcptwist(1), 0.001 * tcptwist(2);
         double filterFactor = deltaT / (filterTimeConstant + deltaT);
         currentTCPLinearVelocity_filtered = (1 - filterFactor) * currentTCPLinearVelocity_filtered + filterFactor * currentTCPLinearVelocity;
+
+        controllerSensorData.getWriteBuffer().tcpPose = currentTCPPose;
+        controllerSensorData.getWriteBuffer().currentTime += deltaT;
+        controllerSensorData.getWriteBuffer().linearVelocity = currentTCPLinearVelocity_filtered;
+        controllerSensorData.commitWrite();
 
 
         Eigen::Vector3f currentTCPAngularVelocity;
@@ -415,6 +410,10 @@ void DSRTController::onPublish(const SensorAndControl&, const DebugDrawerInterfa
     datafields["currentTCPLinearVelocity_x"] = new Variant(debugDataInfo.getUpToDateReadBuffer().currentTCPLinearVelocity_x);
     datafields["currentTCPLinearVelocity_y"] = new Variant(debugDataInfo.getUpToDateReadBuffer().currentTCPLinearVelocity_y);
     datafields["currentTCPLinearVelocity_z"] = new Variant(debugDataInfo.getUpToDateReadBuffer().currentTCPLinearVelocity_z);
+
+    datafields["belief_0"] = new Variant(debugDataInfo.getUpToDateReadBuffer().belief0);
+    datafields["belief_1"] = new Variant(debugDataInfo.getUpToDateReadBuffer().belief1);
+    datafields["belief_2"] = new Variant(debugDataInfo.getUpToDateReadBuffer().belief2);
 
     debugObs->setDebugChannel("DSControllerOutput", datafields);
 

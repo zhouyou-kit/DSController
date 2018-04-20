@@ -53,6 +53,8 @@ module armarx
 
         Ice::StringSeq gmmParamsFiles;
         float positionErrorTolerance;
+
+        float dsAdaptorEpsilon;
     };
 
     interface DSControllerInterface extends NJointControllerInterface
