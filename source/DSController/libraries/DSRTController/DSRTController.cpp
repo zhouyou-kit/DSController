@@ -169,9 +169,6 @@ DSRTController::DSRTController(NJointControllerDescriptionProviderInterfacePtr p
     }
     ARMARX_CHECK_EQUAL(gmmMotionGenList.size(), 2);
 
-
-
-    ARMARX_INFO << "epsilon: " << cfg->dsAdaptorEpsilon;
     dsAdaptorPtr.reset(new DSAdaptor(gmmMotionGenList, cfg->dsAdaptorEpsilon));
     positionErrorTolerance = cfg->positionErrorTolerance;
 
@@ -189,20 +186,23 @@ void DSRTController::controllerRun()
 
 
     Eigen::Matrix4f currentTCPPose = controllerSensorData.getReadBuffer().tcpPose;
+    Eigen::Vector3f realVelocity = controllerSensorData.getReadBuffer().linearVelocity;
+
     Eigen::Vector3f currentTCPPositionInMeter;
     currentTCPPositionInMeter << currentTCPPose(0, 3), currentTCPPose(1, 3), currentTCPPose(2, 3);
     currentTCPPositionInMeter = 0.001 * currentTCPPositionInMeter;
-    Eigen::Vector3f realVelocity = controllerSensorData.getReadBuffer().linearVelocity;
 
     dsAdaptorPtr->updateDesiredVelocity(currentTCPPositionInMeter, positionErrorTolerance);
     Eigen::Vector3f tcpDesiredLinearVelocity = dsAdaptorPtr->totalDesiredVelocity;
     dsAdaptorPtr->updateBelief(realVelocity);
 
 
+
     float vecLen = tcpDesiredLinearVelocity.norm();
     if (vecLen > v_max)
     {
-        tcpDesiredLinearVelocity = tcpDesiredLinearVelocity / vecLen  * v_max;
+
+        tcpDesiredLinearVelocity = tcpDesiredLinearVelocity / vecLen * v_max;
     }
 
     ARMARX_INFO << "tcpDesiredLinearVelocity: " << tcpDesiredLinearVelocity;
