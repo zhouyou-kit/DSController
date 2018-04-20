@@ -62,7 +62,7 @@ namespace armarx
     class GMMMotionGen
     {
     public:
-        GMMMotionGen();
+        GMMMotionGen() {}
 
         GMMMotionGen(const std::string& fileName)
         {
@@ -71,6 +71,11 @@ namespace armarx
 
         GMMPtr  gmm;
         GMRParameters gmmParas;
+        Eigen::Vector3f desiredDefaultTarget;
+        float scaling;
+
+        float belief;
+
 
         void getGMMParamsFromJsonFile(const std::string& fileName)
         {
@@ -87,9 +92,52 @@ namespace armarx
             json->getArray<double>("attractor", gmmParas.attractor_);
             json->getArray<double>("Sigma", gmmParas.Sigma_);
 
+            scaling = json->getDouble("Scaling");
+            belief = json->getDouble("InitBelief");
+
             gmm.reset(new GMRDynamics(gmmParas.K_gmm_, gmmParas.dim_, gmmParas.dt_, gmmParas.Priors_, gmmParas.Mu_, gmmParas.Sigma_));
             gmm->initGMR(0, 2, 3, 5);
+
+            if (gmmParas.attractor_.size() < 3)
+            {
+                ARMARX_ERROR << "attractor in json file should be 6 dimension vector ... ";
+            }
+
+            for (int i = 0; i < 3; ++i)
+            {
+                desiredDefaultTarget(i) = gmmParas.attractor_.at(i);
+            }
         }
+
+        void updateDesiredVelocity(const Eigen::Vector3f& currentPositionInMeter, float positionErrorToleranceInMeter)
+        {
+            Eigen::Vector3f PositionError = currentPositionInMeter - desiredDefaultTarget;
+            if (PositionError.norm() < positionErrorToleranceInMeter)
+            {
+                PositionError.setZero();
+            }
+
+            MathLib::Vector position_error;
+            position_error.Resize(3);
+
+            for (int i = 0; i < 3; ++i)
+            {
+                position_error(i) = PositionError(i);
+            }
+
+            MathLib::Vector desired_vel;
+            desired_vel.Resize(3);
+            desired_vel = gmm->getVelocity(position_error);
+
+            Eigen::Vector3f tcpDesiredLinearVelocity;
+            tcpDesiredLinearVelocity << desired_vel(0), desired_vel(1), desired_vel(2);
+
+            currentDesiredVelocity = scaling * tcpDesiredLinearVelocity;
+        }
+
+
+
+        Eigen::Vector3f currentDesiredVelocity;
     };
 
     typedef boost::shared_ptr<GMMMotionGen> GMMMotionGenPtr;

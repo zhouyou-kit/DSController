@@ -14,7 +14,7 @@
 			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.04}}' docValue="0.0399999991059303"/>
 		</Parameter>
 		<Parameter name="GMMParamsFiles" type="::armarx::SingleTypeVariantListBase(::armarx::StringVariantData)" docType="List(string)" optional="no">
-			<DefaultValue value='{"array":[{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::StringVariantData","value":"/localhome/armar6-user/armar6_motion/GMM_Motion/Curve_go_right.json"}}],"type":"::armarx::SingleTypeVariantListBase"}' docValue="/localhome/armar6-user/armar6_motion/GMM_Motion/Curve_go_right.json"/>
+			<DefaultValue value='{"array":[{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::StringVariantData","value":"/localhome/armar6-user/armar6_motion/GMM_Motion/Curve_go_right.json"}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::StringVariantData","value":"/localhome/armar6-user/armar6_motion/GMM_Motion/Curve_go_left.json"}}],"type":"::armarx::SingleTypeVariantListBase"}' docValue="/localhome/armar6-user/armar6_motion/GMM_Motion/Curve_go_right.json\n/localhome/armar6-user/armar6_motion/GMM_Motion/Curve_go_left.json"/>
 		</Parameter>
 		<Parameter name="Kp" type="::armarx::FloatVariantData" docType="float" optional="no">
 			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":1}}' docValue="1"/>
@@ -38,7 +38,7 @@
 			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":1}}' docValue="1"/>
 		</Parameter>
 		<Parameter name="PositionErrorTolerance" type="::armarx::FloatVariantData" docType="float" optional="no">
-			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":50}}' docValue="50"/>
+			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.05}}' docValue="0.0500000007450581"/>
 		</Parameter>
 		<Parameter name="TorqueLimit" type="::armarx::FloatVariantData" docType="float" optional="no">
 			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":20}}' docValue="20"/>

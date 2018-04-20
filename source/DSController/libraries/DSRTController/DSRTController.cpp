@@ -161,9 +161,11 @@ DSRTController::DSRTController(NJointControllerDescriptionProviderInterfacePtr p
     }
 
     gmmMotionGenList.clear();
+    float sumBelief = 0;
     for (size_t i = 0; i < gmmParamsFiles.size(); ++i)
     {
         gmmMotionGenList.push_back(GMMMotionGenPtr(new GMMMotionGen(gmmParamsFiles.at(i))));
+        sumBelief += gmmMotionGenList[i]->belief;
     }
 
 
@@ -182,32 +184,19 @@ void DSRTController::controllerRun()
 
 
     Eigen::Matrix4f currentTCPPose = controllerSensorData.getReadBuffer().tcpPose;
-    Eigen::Vector3f currentTCPPosition;
-    currentTCPPosition << currentTCPPose(0, 3), currentTCPPose(1, 3), currentTCPPose(2, 3);
-
-    Eigen::Vector3f PositionError = currentTCPPosition - desiredPosition;
-    if (PositionError.norm() < positionErrorTolerance)
-    {
-        PositionError.setZero();
-    }
-
-    MathLib::Vector position_error;
-    position_error.Resize(3);
-
-    for (int i = 0; i < 3; ++i)
-    {
-        position_error(i) = 0.001 * PositionError(i);
-    }
-
-    GMMMotionGenPtr gmmMotionGen = gmmMotionGenList[0];
-    MathLib::Vector desired_vel;
-    desired_vel.Resize(3);
-    desired_vel = gmmMotionGen->gmm->getVelocity(position_error);
+    Eigen::Vector3f currentTCPPositionInMeter;
+    currentTCPPositionInMeter << currentTCPPose(0, 3), currentTCPPose(1, 3), currentTCPPose(2, 3);
+    currentTCPPositionInMeter = 0.001 * currentTCPPositionInMeter;
 
     Eigen::Vector3f tcpDesiredLinearVelocity;
-    tcpDesiredLinearVelocity << desired_vel(0), desired_vel(1), desired_vel(2);
-    tcpDesiredLinearVelocity = posiKp * tcpDesiredLinearVelocity;
-    //    Eigen::Vector3f tcpDesiredLinearVelocity = posiKp * PositionError;
+    tcpDesiredLinearVelocity.setZero();
+
+    for (size_t i = 0; i < gmmMotionGenList.size(); ++i)
+    {
+        gmmMotionGenList[i]->updateDesiredVelocity(currentTCPPositionInMeter, positionErrorTolerance);
+        tcpDesiredLinearVelocity +=  gmmMotionGenList[i]->belief * gmmMotionGenList[i]->currentDesiredVelocity;
+    }
+
     float lenVec = tcpDesiredLinearVelocity.norm();
     if (std::isnan(lenVec))
     {
@@ -219,6 +208,8 @@ void DSRTController::controllerRun()
     {
         tcpDesiredLinearVelocity = (v_max / lenVec) * tcpDesiredLinearVelocity;
     }
+
+
 
     Eigen::Vector3f tcpDesiredAngularError;
     tcpDesiredAngularError << 0, 0, 0;
