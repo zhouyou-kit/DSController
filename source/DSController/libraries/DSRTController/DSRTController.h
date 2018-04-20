@@ -207,7 +207,12 @@ namespace armarx
                 }
 
                 beliefUpdate[i] = - outerDisSimilarity - innerSimilarity;
+
+
             }
+
+
+
 
             float nullOuterSimilarity = realVelocity.squaredNorm();
             float zeroTaskRawBeliefUpdate = - nullInnerSimilarity - nullOuterSimilarity;
@@ -221,14 +226,34 @@ namespace armarx
             beliefUpdate.insert(beliefUpdate.begin(), zeroTaskRawBeliefUpdate);
 
             WinnerTakeAll(beliefUpdate);
-
             task0_belief += epsilon * beliefUpdate[0];
+            if (task0_belief > 1)
+            {
+                task0_belief = 1;
+            }
+            else if (task0_belief < 0)
+            {
+                task0_belief = 0;
+            }
+
             float beliefSum = task0_belief;
 
             for (size_t i = 0; i < gmmMotionGenList.size(); ++i)
             {
                 gmmMotionGenList[i]->belief += epsilon * beliefUpdate[i + 1];
+
+
+                if (gmmMotionGenList[i]->belief > 1)
+                {
+                    gmmMotionGenList[i]->belief = 1;
+                }
+                else if (gmmMotionGenList[i]->belief < 0)
+                {
+                    gmmMotionGenList[i]->belief = 0;
+                }
+
                 beliefSum += gmmMotionGenList[i]->belief;
+
             }
 
             for (size_t i = 0; i < gmmMotionGenList.size(); ++i)
