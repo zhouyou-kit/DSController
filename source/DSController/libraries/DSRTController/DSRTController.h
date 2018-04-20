@@ -33,7 +33,7 @@
 
 #include <DSController/interface/DSControllerBase.h>
 #include "GMRDynamics.h"
-#include <jsoncpp/json/reader.h>
+#include <ArmarXCore/util/json/JSONObject.h>
 
 #include "MathLib.h"
 

@@ -142,7 +142,6 @@ DSRTController::DSRTController(NJointControllerDescriptionProviderInterfacePtr p
 
     std::vector<float> qnullspaceVec = cfg->qnullspaceVec;
 
-    std::cout << "size lll : " << qnullspaceVec.size() << std::endl;
     qnullspace.resize(qnullspaceVec.size());
 
     for (size_t i = 0; i < qnullspaceVec.size(); ++i)
@@ -154,51 +153,20 @@ DSRTController::DSRTController(NJointControllerDescriptionProviderInterfacePtr p
     nullspaceDamping = cfg->nullspaceDamping;
 
 
-
-
-
     //set GMM parameters ...
     std::string gmmParamsFile = cfg->gmmParamsFile;
-    Json::Value root;
-    jsonReader.parse(gmmParamsFile, root);
+    std::ifstream infile { gmmParamsFile };
+    std::string objDefs = { std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>() };
+    JSONObjectPtr json = new JSONObject();
+    json->fromString(objDefs);
 
-    Json::Value data = root.get("K", 0);
-    GMRParas.K_gmm_ = data[0].asInt();
 
-    data = root.get("dim", 0);
-    GMRParas.dim_ = data[0].asInt();
-
-    data = root.get("Priors", 0);
-    GMRParas.Priors_.resize(GMRParas.K_gmm_);
-    Json::Value dat1 = data[0];
-    for (int i = 0; i < GMRParas.Priors_.size(); ++i)
-    {
-        GMRParas.Priors_.at(i) = dat1[i].asDouble();
-    }
-
-    data = root.get("Mu", 0);
-    GMRParas.Mu_.resize(GMRParas.K_gmm_ * GMRParas.dim_);
-    dat1 = data[0];
-    for (int i = 0; i < GMRParas.Mu_.size(); ++i)
-    {
-        GMRParas.Mu_.at(i) = dat1[i].asDouble();
-    }
-
-    data = root.get("Sigma", 0);
-    GMRParas.Sigma_.resize(GMRParas.K_gmm_ * GMRParas.dim_ * GMRParas.dim_);
-    dat1 = data[0];
-    for (int i = 0; i < GMRParas.Sigma_.size(); ++i)
-    {
-        GMRParas.Sigma_.at(i) = dat1[i].asDouble();
-    }
-
-    data = root.get("attractor", 0);
-    GMRParas.attractor_.resize(GMRParas.dim_);
-    dat1 = data[0];
-    for (int i = 0; i < GMRParas.attractor_.size(); ++i)
-    {
-        GMRParas.attractor_.at(i) = dat1[i].asDouble();
-    }
+    GMRParas.K_gmm_ = json->getInt("K");
+    GMRParas.dim_ = json->getInt("dim");
+    json->getArray<double>("Priors", GMRParas.Priors_);
+    json->getArray<double>("Mu", GMRParas.Mu_);
+    json->getArray<double>("attractor", GMRParas.attractor_);
+    json->getArray<double>("Sigma", GMRParas.Sigma_);
 
 
     GMMPtr.reset(new GMRDynamics(GMRParas.K_gmm_, GMRParas.dim_, GMRParas.dt_, GMRParas.Priors_, GMRParas.Mu_, GMRParas.Sigma_));
@@ -219,7 +187,7 @@ void DSRTController::controllerRun()
     Eigen::Vector3f currentTCPPosition;
     currentTCPPosition << currentTCPPose(0, 3), currentTCPPose(1, 3), currentTCPPose(2, 3);
 
-    Eigen::Vector3f PositionError = desiredPosition - currentTCPPosition;
+    Eigen::Vector3f PositionError = currentTCPPosition - desiredPosition;
     if (PositionError.norm() < 100)
     {
         PositionError.setZero();
@@ -230,7 +198,7 @@ void DSRTController::controllerRun()
 
     for (int i = 0; i < 3; ++i)
     {
-        position_error(i) = PositionError(i);
+        position_error(i) = 0.001 * PositionError(i);
     }
 
     MathLib::Vector desired_vel;
@@ -239,9 +207,15 @@ void DSRTController::controllerRun()
 
     Eigen::Vector3f tcpDesiredLinearVelocity;
     tcpDesiredLinearVelocity << desired_vel(0), desired_vel(1), desired_vel(2);
-
+    tcpDesiredLinearVelocity = posiKp * tcpDesiredLinearVelocity;
     //    Eigen::Vector3f tcpDesiredLinearVelocity = posiKp * PositionError;
     float lenVec = tcpDesiredLinearVelocity.norm();
+    if (std::isnan(lenVec))
+    {
+        ARMARX_WARNING << "nan value from desired velocity ...  ";
+        tcpDesiredLinearVelocity.setZero();
+    }
+
     if (lenVec > v_max)
     {
         tcpDesiredLinearVelocity = (v_max / lenVec) * tcpDesiredLinearVelocity;
