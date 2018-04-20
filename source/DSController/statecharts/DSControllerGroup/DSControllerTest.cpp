@@ -63,6 +63,7 @@ void DSControllerTest::run()
 
     float nullspaceKp = in.getNullSpaceKp();
     float nullspaceDamping = in.getNullSpaceDamping();
+    float positionErrorTolerance = in.getPositionErrorTolerance();
     std::vector<std::string> gmmfilestrings = in.getGMMParamsFiles();
     DSControllerConfigPtr config = new DSControllerConfig(kp,
             v_max,
@@ -78,7 +79,8 @@ void DSControllerTest::run()
             nullspaceVec,
             nullspaceKp,
             nullspaceDamping,
-            gmmfilestrings
+            gmmfilestrings,
+            positionErrorTolerance
                                                          );
 
 

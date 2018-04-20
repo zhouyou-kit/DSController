@@ -167,6 +167,8 @@ DSRTController::DSRTController(NJointControllerDescriptionProviderInterfacePtr p
     }
 
 
+    positionErrorTolerance = cfg->positionErrorTolerance;
+
     ARMARX_INFO << "Initialization done";
 }
 
@@ -184,7 +186,7 @@ void DSRTController::controllerRun()
     currentTCPPosition << currentTCPPose(0, 3), currentTCPPose(1, 3), currentTCPPose(2, 3);
 
     Eigen::Vector3f PositionError = currentTCPPosition - desiredPosition;
-    if (PositionError.norm() < 100)
+    if (PositionError.norm() < positionErrorTolerance)
     {
         PositionError.setZero();
     }

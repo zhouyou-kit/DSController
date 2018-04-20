@@ -213,6 +213,8 @@ namespace armarx
 
         std::vector<GMMMotionGenPtr> gmmMotionGenList;
 
+        float positionErrorTolerance;
+
 
         // NJointController interface
     protected:
