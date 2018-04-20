@@ -51,7 +51,7 @@ module armarx
         float nullspaceDamping;
 
 
-        string gmmParamsFile;
+        Ice::StringSeq gmmParamsFiles;
     };
 
     interface DSControllerInterface extends NJointControllerInterface

@@ -154,23 +154,19 @@ DSRTController::DSRTController(NJointControllerDescriptionProviderInterfacePtr p
 
 
     //set GMM parameters ...
-    std::string gmmParamsFile = cfg->gmmParamsFile;
-    std::ifstream infile { gmmParamsFile };
-    std::string objDefs = { std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>() };
-    JSONObjectPtr json = new JSONObject();
-    json->fromString(objDefs);
+    std::vector<std::string> gmmParamsFiles = cfg->gmmParamsFiles;
+    if (gmmParamsFiles.size() == 0)
+    {
+        ARMARX_ERROR << "no gmm found ... ";
+    }
+
+    gmmMotionGenList.clear();
+    for (size_t i = 0; i < gmmParamsFiles.size(); ++i)
+    {
+        gmmMotionGenList.push_back(GMMMotionGenPtr(new GMMMotionGen(gmmParamsFiles.at(i))));
+    }
 
 
-    GMRParas.K_gmm_ = json->getInt("K");
-    GMRParas.dim_ = json->getInt("dim");
-    json->getArray<double>("Priors", GMRParas.Priors_);
-    json->getArray<double>("Mu", GMRParas.Mu_);
-    json->getArray<double>("attractor", GMRParas.attractor_);
-    json->getArray<double>("Sigma", GMRParas.Sigma_);
-
-
-    GMMPtr.reset(new GMRDynamics(GMRParas.K_gmm_, GMRParas.dim_, GMRParas.dt_, GMRParas.Priors_, GMRParas.Mu_, GMRParas.Sigma_));
-    GMMPtr->initGMR(0, 2, 3, 5);
     ARMARX_INFO << "Initialization done";
 }
 
@@ -201,9 +197,10 @@ void DSRTController::controllerRun()
         position_error(i) = 0.001 * PositionError(i);
     }
 
+    GMMMotionGenPtr gmmMotionGen = gmmMotionGenList[0];
     MathLib::Vector desired_vel;
     desired_vel.Resize(3);
-    desired_vel = GMMPtr->getVelocity(position_error);
+    desired_vel = gmmMotionGen->gmm->getVelocity(position_error);
 
     Eigen::Vector3f tcpDesiredLinearVelocity;
     tcpDesiredLinearVelocity << desired_vel(0), desired_vel(1), desired_vel(2);

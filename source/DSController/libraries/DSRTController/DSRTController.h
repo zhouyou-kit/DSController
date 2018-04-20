@@ -46,6 +46,55 @@ namespace armarx
         Eigen::Vector3f tcpDesiredAngularError;
     };
 
+    typedef boost::shared_ptr<GMRDynamics> GMMPtr;
+
+    struct GMRParameters
+    {
+        int K_gmm_;
+        int dim_;
+        std::vector<double> Priors_;
+        std::vector<double> Mu_;
+        std::vector<double> Sigma_;
+        std::vector<double> attractor_;
+        double dt_;
+    };
+
+    class GMMMotionGen
+    {
+    public:
+        GMMMotionGen();
+
+        GMMMotionGen(const std::string& fileName)
+        {
+            getGMMParamsFromJsonFile(fileName);
+        }
+
+        GMMPtr  gmm;
+        GMRParameters gmmParas;
+
+        void getGMMParamsFromJsonFile(const std::string& fileName)
+        {
+            std::ifstream infile { fileName };
+            std::string objDefs = { std::istreambuf_iterator<char>(infile), std::istreambuf_iterator<char>() };
+            JSONObjectPtr json = new JSONObject();
+            json->fromString(objDefs);
+
+
+            gmmParas.K_gmm_ = json->getInt("K");
+            gmmParas.dim_ = json->getInt("dim");
+            json->getArray<double>("Priors", gmmParas.Priors_);
+            json->getArray<double>("Mu", gmmParas.Mu_);
+            json->getArray<double>("attractor", gmmParas.attractor_);
+            json->getArray<double>("Sigma", gmmParas.Sigma_);
+
+            gmm.reset(new GMRDynamics(gmmParas.K_gmm_, gmmParas.dim_, gmmParas.dt_, gmmParas.Priors_, gmmParas.Mu_, gmmParas.Sigma_));
+            gmm->initGMR(0, 2, 3, 5);
+        }
+    };
+
+    typedef boost::shared_ptr<GMMMotionGen> GMMMotionGenPtr;
+
+
     /**
     * @defgroup Library-DSRTController DSRTController
     * @ingroup DSController
@@ -57,6 +106,7 @@ namespace armarx
     *
     * Detailed description of class DSRTController.
     */
+
     class DSRTController : public NJointControllerWithTripleBuffer<DSRTControllerControlData>, public DSControllerInterface
     {
 
@@ -161,21 +211,8 @@ namespace armarx
 
         Eigen::VectorXf qnullspace;
 
-        boost::shared_ptr<GMRDynamics> GMMPtr;
+        std::vector<GMMMotionGenPtr> gmmMotionGenList;
 
-
-        struct GMRParameters
-        {
-            int K_gmm_;
-            int dim_;
-            std::vector<double> Priors_;
-            std::vector<double> Mu_;
-            std::vector<double> Sigma_;
-            std::vector<double> attractor_;
-            double dt_;
-        } GMRParas;
-
-        Json::Reader jsonReader;
 
         // NJointController interface
     protected:

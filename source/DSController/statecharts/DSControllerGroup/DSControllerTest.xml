@@ -13,8 +13,8 @@
 		<Parameter name="FilterTimeConstant" type="::armarx::FloatVariantData" docType="float" optional="no">
 			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.04}}' docValue="0.0399999991059303"/>
 		</Parameter>
-		<Parameter name="GMMParamsFile" type="::armarx::StringVariantData" docType="string" optional="no">
-			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::StringVariantData","value":"sss"}}' docValue="sss"/>
+		<Parameter name="GMMParamsFiles" type="::armarx::SingleTypeVariantListBase(::armarx::StringVariantData)" docType="List(string)" optional="no">
+			<DefaultValue value='{"array":[{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::StringVariantData","value":"/localhome/armar6-user/armar6_motion/GMM_Motion/Curve_go_right.json"}}],"type":"::armarx::SingleTypeVariantListBase"}' docValue="/localhome/armar6-user/armar6_motion/GMM_Motion/Curve_go_right.json"/>
 		</Parameter>
 		<Parameter name="Kp" type="::armarx::FloatVariantData" docType="float" optional="no">
 			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.3}}' docValue="0.300000011920929"/>
