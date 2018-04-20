@@ -171,6 +171,7 @@ DSRTController::DSRTController(NJointControllerDescriptionProviderInterfacePtr p
 
 
 
+    ARMARX_INFO << "epsilon: " << cfg->dsAdaptorEpsilon;
     dsAdaptorPtr.reset(new DSAdaptor(gmmMotionGenList, cfg->dsAdaptorEpsilon));
     positionErrorTolerance = cfg->positionErrorTolerance;
 
@@ -201,8 +202,10 @@ void DSRTController::controllerRun()
     float vecLen = tcpDesiredLinearVelocity.norm();
     if (vecLen > v_max)
     {
-        tcpDesiredLinearVelocity = v_max * tcpDesiredLinearVelocity / vecLen;
+        tcpDesiredLinearVelocity = tcpDesiredLinearVelocity / vecLen  * v_max;
     }
+
+    ARMARX_INFO << "tcpDesiredLinearVelocity: " << tcpDesiredLinearVelocity;
 
     debugDataInfo.getWriteBuffer().belief0 = dsAdaptorPtr->task0_belief;
     debugDataInfo.getWriteBuffer().belief1 = gmmMotionGenList[0]->belief;

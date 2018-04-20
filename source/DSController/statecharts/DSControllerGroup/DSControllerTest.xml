@@ -5,13 +5,13 @@
 			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":100}}' docValue="100"/>
 		</Parameter>
 		<Parameter name="DesiredQuaternion" type="::armarx::SingleTypeVariantListBase(::armarx::FloatVariantData)" docType="List(float)" optional="no">
-			<DefaultValue value='{"array":[{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":-0.3011}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.6090}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.5091}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.5286}}],"type":"::armarx::SingleTypeVariantListBase"}' docValue="-0.301099985837936\n0.609000027179718\n0.509100019931793\n0.528599977493286"/>
+			<DefaultValue value='{"array":[{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.3431076407432556}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.7158461809158325}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.6033428311347961}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":-0.07628194987773895}}],"type":"::armarx::SingleTypeVariantListBase"}' docValue="0.343107640743256\n0.715846180915833\n0.603342831134796\n-0.076281949877739"/>
 		</Parameter>
 		<Parameter name="DesiredTarget" type="::armarx::SingleTypeVariantListBase(::armarx::FloatVariantData)" docType="List(float)" optional="no">
 			<DefaultValue value='{"array":[{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":-319.35}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":806.74}},{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":1025.31}}],"type":"::armarx::SingleTypeVariantListBase"}' docValue="-319.350006103516\n806.739990234375\n1025.31005859375"/>
 		</Parameter>
 		<Parameter name="DsAdaptorEpsilon" type="::armarx::FloatVariantData" docType="float" optional="no">
-			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":2}}' docValue="2"/>
+			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":1}}' docValue="1"/>
 		</Parameter>
 		<Parameter name="FilterTimeConstant" type="::armarx::FloatVariantData" docType="float" optional="no">
 			<DefaultValue value='{"type":"::armarx::SingleVariantBase","variant":{"typeName":"::armarx::FloatVariantData","value":0.04}}' docValue="0.0399999991059303"/>

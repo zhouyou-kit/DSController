@@ -168,7 +168,11 @@ namespace armarx
         {
             task0_belief = 1;
             this->gmmMotionGenList = gmmMotionGenList;
+
+            ARMARX_INFO << "epsilon: " << epsilon;
             this->epsilon = epsilon;
+
+            totalDesiredVelocity.setZero();
         }
 
         Eigen::Vector3f totalDesiredVelocity;
